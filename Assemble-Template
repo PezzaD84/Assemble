@@ -296,7 +296,6 @@ if [[ "$FV_DEFERRED_STATUS" = "active" ]]; then
 		echo "Updating device inventory."
 		$jamfBinary recon
 	fi
-	
 	sleep 120
 	exit 0
 	
@@ -310,10 +309,10 @@ else
 	
 	if [[ $TESTING == "true" ]]; then
 		echo "Testing mode enabled. Inventory will not be updated."
-		exit 0
 	else
 		echo "Updating device inventory."
 		$jamfBinary recon
-		exit 0
 	fi
+	sleep 120
+	exit 0
 fi
