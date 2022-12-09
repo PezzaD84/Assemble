@@ -1,0 +1,319 @@
+#!/bin/bash
+#
+# Script to provision a new device using swiftDialog
+#
+# Created by Perry Driscoll 28/9/2022
+#
+# Last Upadte 8/12/2022
+#
+#########################################################################################
+
+#########################################################################################
+# Grab currently logged in user
+#########################################################################################
+
+CURRENT_USER=$(ls -l /dev/console | awk '{ print $3 }')
+
+#########################################################################################
+# Add your custom settings here.
+# orgLogo is recommended to be a png or jpeg
+# banner is recommended to be a png or jpeg at 850x150
+#########################################################################################
+
+orgLogo=""
+banner=""
+welcomeMessage="Welcome to your new mac $CURRENT_USER! \n\n We will now run through some basic configuration and install some common apps to help get you up and running. \n\n Sit back and have a break while we get things ready."
+
+#########################################################################################
+# Policy array
+# Format must be as follows:
+# "Application Name,JAMF Trigger,Icon Hash" - how to find the hash can be found here https://vimeo.com/772998915 (thanks to Dan Snelson)
+#########################################################################################
+
+array=(
+	"Google Chrome,installChrome2,fb48e96c34d449ef5ff0d56e983a034927320195be69a02c076b6270a4e19d54"
+	"Slack,installSlack,4c854db5ebeed437a6c7bf34cfb01fc4631ace8a339183f78d94adef74bbab1f"
+	"Atom,installAtom,e4bcac54cc087b73724bc958df90682b5b68064d4760713e3135da722f9d8845"
+	"zoom,installZoom,89c52ab16cabcc11aa955521b7589955e8ea2995f250f4b65356a46653bd734b"
+	"Spotify,installSpotify2,7be69c3635be12e83e7e69c2c648e3ace478dea8d21b9db851a65e70e84acc5f"
+	"Final Config,finalConfig,3b0765f097a797e05d960186b475375ce5953b7d09f9bd98584c3bb14cae2065"
+)
+
+#########################################################################################
+# Testing mode
+# If set to true no policies will run, only the application list will be populated
+# Set to true by default
+#########################################################################################
+
+TESTING=""
+
+#########################################################################################
+#########################################################################################
+######     !!TRY NOT TO EDIT BELOW HERE OR THE WHOLE THING MIGHT EXPLODE!!         ######
+#########################################################################################
+#########################################################################################
+
+#########################################################################################
+# Variables
+#########################################################################################
+
+jamfBinary="/usr/local/bin/jamf"
+commandLog="/Library/.ASMBL/Logs/DialogCommand.log"
+
+#########################################################################################
+# Functions
+#########################################################################################
+
+DialogInstall(){
+	pkgfile="SwiftDialog.pkg"
+	logfile="/Library/Logs/SwiftDialogInstallScript.log"
+	URL="https://github.com$(curl -sfL "$(curl -sfL "https://github.com/bartreardon/swiftDialog/releases/latest" | tr '"' "\n" | grep -i "expanded_assets" | head -1)" | tr '"' "\n" | grep -i "^/.*\/releases\/download\/.*\.pkg" | head -1)"
+	
+	# Start Log entries
+	echo "--" >> ${logfile}
+	echo "`date`: Downloading latest version." >> ${logfile}
+	
+	# Download installer
+	curl -s -L -J -o /tmp/${pkgfile} ${URL}
+	echo "`date`: Installing..." >> ${logfile}
+	
+	# Change to installer directory
+	cd /tmp
+	
+	# Install application
+	sudo installer -pkg ${pkgfile} -target /
+	sleep 5
+	echo "`date`: Deleting package installer." >> ${logfile}
+	
+	# Remove downloaded installer
+	rm /tmp/"${pkgfile}"
+}
+
+#########################################################################################
+# Check Dock is running before starting
+#########################################################################################
+
+DOCK_STATUS=$(pgrep -x Dock)
+while [[ "$DOCK_STATUS" == "" ]]; do
+  echo "Dock not running yet... please wait..."
+  sleep 3
+  DOCK_STATUS=$(pgrep -x Dock)
+done
+
+echo "Dock is running as process $DOCK_STATUS. Starting assemble....."
+sleep 3
+
+##############################################################
+# Check if SwiftDialog is installed (SwiftDialog created by Bart Reardon https://github.com/bartreardon/swiftDialog)
+##############################################################
+
+if ! command -v dialog &> /dev/null
+then
+	echo "SwiftDialog is not installed. App will be installed now....."
+	sleep 2
+	
+	DialogInstall
+	
+else
+	echo "SwiftDialog is installed. Checking installed version....."
+	
+	installedVersion=$(dialog -v | sed 's/./ /6' | awk '{print $1}')
+	
+	latestVersion=$(curl -sfL "https://github.com/bartreardon/swiftDialog/releases/latest" | tr '"' "\n" | grep -i "expanded_assets" | head -1 | tr '/' ' ' | awk '{print $7}' | tr -d 'v')
+	
+	if [[ $installedVersion != $latestVersion ]]; then
+		echo "Dialog needs updating"
+		DialogInstall
+	else
+		echo "Dialog is up to date. Continuing to assemble...."
+	fi
+	sleep 3
+fi
+
+#########################################################################################
+# Check if assemble has run before
+#########################################################################################
+
+if [ -f /Library/.ASMBL/Logs/DialogCommand.log ]; then
+	echo "Assemble has run before. Continuing to assemble...."
+	sleep 3
+else
+	echo "Assemble has not run before. Creating folder structure now...."
+	mkdir -p /Library/.ASMBL/Logs/
+	sleep 3
+fi
+
+#########################################################################################
+# Dialog window for Start message
+#########################################################################################
+
+progressTotal=${#array[@]}
+
+if [[ $orgLogo == "" ]]; then
+	orgLogo="none"
+fi
+
+if [[ $banner == "" ]]; then
+	dialog \
+	--button1disabled \
+	--title Assemble \
+	--position centre \
+	--icon $orgLogo \
+	--message "$welcomeMessage" \
+	--height 400 \
+	--alignment centre \
+	--messagefont 'name=Arial,size=16' \
+	--blurscreen \
+	--progress $progressTotal \
+	--commandfile $commandLog &
+	sleep 10
+else
+	dialog \
+	--button1disabled \
+	--title none \
+	--position centre \
+	--bannerimage $banner \
+	--icon $orgLogo \
+	--message "$welcomeMessage" \
+	--height 400 \
+	--alignment centre \
+	--messagefont 'name=Arial,size=16' \
+	--blurscreen \
+	--progress $progressTotal \
+	--commandfile $commandLog &
+	sleep 10
+fi
+
+
+#########################################################################################
+# Caffinate Dialog process
+#########################################################################################
+#
+#dialogPID=$(pgrep -x Dialog)
+#caffeinate -disu -w $dialogPID
+
+#########################################################################################
+# Dialog window update with list of apps
+#########################################################################################
+
+echo "message: Your mac is now being provisioned with the following settings and applications." >> $commandLog
+echo "progresstext: Starting Installation...." >> $commandLog
+echo "list: " >> $commandLog
+echo "listitem: delete, index: 0" >> $commandLog
+echo "height: 600" >> $commandLog
+
+for appStatus in "${array[@]}"; do
+	
+	echo "listitem: add, title: $(echo $appStatus | cut -d ',' -f1), icon: https://ics.services.jamfcloud.com/icon/hash_$(echo $appStatus | cut -d ',' -f3), status: pending, statustext: pending" >> $commandLog
+	
+done
+
+sleep 5
+
+#########################################################################################
+# Application installation
+#########################################################################################
+
+progressStep=1
+installer=$(pgrep installer)
+
+until [ $progressStep -gt $progressTotal ]; do
+
+	for appName in "${array[@]}"; do
+		
+		echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: wait, statustext: installing" >> $commandLog
+		echo "progress: $progressStep" >> $commandLog
+		echo "progresstext: Installing $(echo $appName | cut -d ',' -f1)...." >> $commandLog
+		
+			if [[ $TESTING == "true" ]]; then
+				echo "Testing mode enabled. $(echo $appName | cut -d ',' -f1) will not be installed."
+			else
+				echo "Applications........ ASSEMBLE!"
+				$jamfBinary policy -event $(echo $appName | cut -d ',' -f2)
+			fi
+	
+			sleep 1
+		
+			appInstalled=$(ls /Applications/ | grep -i "$(echo $appName | cut -d ',' -f1)")
+			MSappInstalled=$(ls /Applications/ | grep -i -m2 Microsoft | tail -n1 | awk '{print $1}')
+			finalConf=$(ls /Library/.ASMBL/Logs/ | grep "Final" | sed -e 's#.log##')
+			
+			sleep 1
+			
+				if [[ $appInstalled == $(echo $appName | cut -d ',' -f1).* ]] || [[ $MSappInstalled == $(echo $appName | cut -d ',' -f1 | awk '{print $1}') ]] || [[ $finalConf == $(echo $appName | cut -d ',' -f1) ]]; then
+					echo "$(echo $appName | cut -d ',' -f1) Installed"
+					echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: success, statustext: installed" >> $commandLog
+					echo "progresstext: Installed $(echo $appName | cut -d ',' -f1)" >> $commandLog
+					sleep 4
+				else
+					echo "$(echo $appName | cut -d ',' -f1) failed to install"
+					echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: fail, statustext: Failed" >> $commandLog
+					echo "progresstext: Failed to install $(echo $appName | cut -d ',' -f1)" >> $commandLog
+					sleep 4
+				fi
+		
+		let "progressStep+=1"
+		sleep 2
+	
+	done
+done
+sleep 2
+
+echo "progresstext: Setup Complete!" >> $commandLog
+
+sleep 2
+
+#########################################################################################
+# Dialog message to show completion
+#########################################################################################
+
+# Check to see if FileVault Deferred enablement is active - do not edit below
+FV_DEFERRED_STATUS=$(fdesetup status | grep "Deferred" | cut -d ' ' -f6)
+
+# Logic to log user out if FileVault is detected. Otherwise, app will close.
+if [[ "$FV_DEFERRED_STATUS" = "active" ]]; then
+	
+	echo "Filevault in deferred mode. User must log out and log in."
+		
+	dialog \
+	--title Assemble \
+	--position centre \
+	--height 400 \
+	--alignment centre \
+	--message "Setup Complete! \n\n $CURRENT_USER you are now all set and ready to go. Please click Logout to finish encrypting your device." \
+	--messagefont 'name=Arial,size=16' \
+	--blurscreen \
+	--button1text Logout \
+	--button1shellaction "pkill -x loginwindow" &
+
+	sleep 2
+
+	echo "quit:" >> $commandLog
+    
+	if [[ $TESTING == "true" ]]; then
+		echo "Testing mode enabled. Inventory will not be updated."
+	else
+		echo "Updating device inventory."
+		$jamfBinary recon
+	fi
+	
+	sleep 120
+	exit 0
+	
+else
+		
+	echo "height: 400" >> $commandLog
+	echo "list: clear" >> $commandLog
+	echo "message: Setup Complete! \n\n $CURRENT_USER you are now all set and ready to go. Please click finish." >> $commandLog
+	echo "button1: enable" >> $commandLog
+	echo "button1text: Finish" >> $commandLog
+	
+	if [[ $TESTING == "true" ]]; then
+		echo "Testing mode enabled. Inventory will not be updated."
+		exit 0
+	else
+		echo "Updating device inventory."
+		$jamfBinary recon
+		exit 0
+	fi
+fi
