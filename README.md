@@ -8,6 +8,8 @@ I wanted to help give end users a nice gui view of what is going on and also try
 
 The script also gives you the ability to add a company logo and banner image to give your script a nice polished professional appearance.
 
+Branded
 ![BrandedDemo](https://user-images.githubusercontent.com/89595349/206698172-285defd3-8825-4deb-8790-ecbff7aeb3ba.png)
 
+Unbranded
 ![UnbrandedDemo](https://user-images.githubusercontent.com/89595349/206698179-c4866fec-454f-4c02-8d3a-2afb15064d21.png)
