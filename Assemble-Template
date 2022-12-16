@@ -190,7 +190,7 @@ fi
 #########################################################################################
 
 dialogPID=$(pgrep -x Dialog)
-caffeinate -disu -w $dialogPID
+caffeinate -disu -w $dialogPID &
 
 #########################################################################################
 # Dialog window update with list of apps
