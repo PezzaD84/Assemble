@@ -10,8 +10,8 @@ The only part that needs customising is the policy array. This area needs to be 
 
 It can be further customised with your company logo and a banner image to give your script a nice polished professional appearance.
 
-Branded
+- Branded
 ![BrandedDemo](https://user-images.githubusercontent.com/89595349/206698172-285defd3-8825-4deb-8790-ecbff7aeb3ba.png)
 
-Unbranded
+- Unbranded
 ![UnbrandedDemo](https://user-images.githubusercontent.com/89595349/206698179-c4866fec-454f-4c02-8d3a-2afb15064d21.png)
