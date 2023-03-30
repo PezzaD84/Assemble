@@ -1,5 +1,7 @@
 # Assemble
 
+Version 2 now available.
+
 Assemble is a script I've created to help provision devices using [swiftDialog](https://github.com/bartreardon/swiftDialog)
 
 The script was inspired by the [DEPNotify starter script](https://github.com/jamf/DEPNotify-Starter) and Dan Snelsons [Setup-Your-Mac script](https://github.com/dan-snelson/dialog-scripts/tree/main/Setup%20Your%20Mac).
