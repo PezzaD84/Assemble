@@ -1,6 +1,6 @@
 # Assemble
 
-Version 2 now available.
+Version 2 now available. Infomation on version 2 coming soon.........
 
 Assemble is a script I've created to help provision devices using [swiftDialog](https://github.com/bartreardon/swiftDialog)
 
