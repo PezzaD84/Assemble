@@ -274,7 +274,8 @@ if [[ "$banner" == "" ]]; then
 	--progress $progressTotal \
 	--commandfile $commandLog \
 	--infobox "$infoText" \
-	--helpmessage "$helpText" &
+	--helpmessage "$helpText"
+	--infotext "Version 2.0" &
 	sleep 10
 	
 	if [[ $EXTRAINFO =~ ^[tT]rue$ ]]; then
@@ -291,6 +292,7 @@ if [[ "$banner" == "" ]]; then
 --blurscreen \
 --messagefont 'name=Arial,size=16' \
 --infobox "$infoText" \
+--infotext "Version 2.0" \
 --helpmessage "$helpText" \
 --textfield "Email Address:",required,prompt="username@company.com" \
 --textfield "User Name:",required,prompt="User Name" \
@@ -348,7 +350,8 @@ else
 	--progress $progressTotal \
 	--commandfile $commandLog \
 	--infobox "$infoText" \
-	--helpmessage "$helpText" &
+	--helpmessage "$helpText"
+	--infotext "Version 2.0" &
 	sleep 10
 	
 	if [[ $EXTRAINFO =~ ^[tT]rue$ ]]; then
@@ -366,6 +369,7 @@ else
 --blurscreen \
 --messagefont 'name=Arial,size=16' \
 --infobox "$infoText" \
+--infotext "Version 2.0" \
 --helpmessage "$helpText" \
 --textfield "Email Address:",required,prompt="username@company.com" \
 --textfield "User Name:",required,prompt="User Name" \
@@ -507,6 +511,7 @@ if [[ "$FV_DEFERRED_STATUS" = "active" ]]; then
 		--message "Setup Complete! \n\n $CURRENT_USER you are now all set and ready to go. Please click Logout to finish encrypting your device." \
 		--messagefont 'name=Arial,size=16' \
 		--blurscreen \
+		--infotext "Version 2.0" \
 		--button1text Logout \
 		--button1shellaction "launchctl bootout user/$(id -u $CURRENT_USER)" &
 	else
@@ -520,6 +525,7 @@ if [[ "$FV_DEFERRED_STATUS" = "active" ]]; then
 		--message "Setup Complete! \n\n $CURRENT_USER you are now all set and ready to go. Please click Logout to finish encrypting your device." \
 		--messagefont 'name=Arial,size=16' \
 		--blurscreen \
+		--infotext "Version 2.0" \
 		--button1text Logout \
 		--button1shellaction "launchctl bootout user/$(id -u $CURRENT_USER)" &
 	fi
