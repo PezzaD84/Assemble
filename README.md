@@ -13,7 +13,7 @@ The only part that needs customising is the policy array. This area needs to be 
 It can be further customised with your company logo and a banner image to give your script a nice polished professional appearance.
 
 - Branded
-![BrandedDemo](https://user-images.githubusercontent.com/89595349/206698172-285defd3-8825-4deb-8790-ecbff7aeb3ba.png)
+![BrandedDemoV2](https://user-images.githubusercontent.com/89595349/233336145-589b9bb8-b818-47d1-a546-51a81a6a83e1.png)
 
 - Unbranded
-![UnbrandedDemo](https://user-images.githubusercontent.com/89595349/206698179-c4866fec-454f-4c02-8d3a-2afb15064d21.png)
+![UnbrandedDemoV2](https://user-images.githubusercontent.com/89595349/233336164-7d7e0faa-d07c-4b78-accd-8a03e9d7849c.png)
