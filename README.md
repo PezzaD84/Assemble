@@ -1,6 +1,6 @@
 # Assemble
 
-Version 2 now available. Infomation on version 2 coming soon.........
+Version 2 now available.
 
 Assemble is a script I've created to help provision devices using [swiftDialog](https://github.com/bartreardon/swiftDialog)
 
@@ -17,3 +17,19 @@ It can be further customised with your company logo and a banner image to give y
 
 - Unbranded
 ![UnbrandedDemoV2](https://user-images.githubusercontent.com/89595349/233336164-7d7e0faa-d07c-4b78-accd-8a03e9d7849c.png)
+
+<br>
+<br>
+<br>
+There is an additional switch to prompt the user for additional information.
+
+
+- Branded
+<img width="932" alt="Screenshot 2023-03-30 at 13 36 30" src="https://user-images.githubusercontent.com/89595349/233341645-bfa3cbba-1f14-4258-a154-ebd8f3a1288b.png">
+
+- Unbranded
+<img width="932" alt="Screenshot 2023-03-30 at 13 53 02" src="https://user-images.githubusercontent.com/89595349/233341677-7b63c0e6-5007-489d-9087-8e0dbb3f7d5c.png">
+
+
+There is an additional setting which can be editing with your companies helpdesk info or other IT support details.
+<img width="932" alt="Screenshot 2023-03-30 at 13 36 20" src="https://user-images.githubusercontent.com/89595349/233344098-c1d83460-dabc-4901-ab5e-b4dcb61366bb.png">
