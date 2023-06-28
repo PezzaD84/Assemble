@@ -1,17 +1,16 @@
 #!/bin/bash
 #
-# Script to provision a new device using swiftDialog
-#
 # Author  : Perry Driscoll - https://github.com/PezzaD84
-# Created : 28/9/2022
-# Updated : 30/3/2023
-# Version : v2
+# Created : 31/1/2022
+# Updated : 28/6/2023
+# Version : v2.2.1
 #
-#########################################################################################
+############################################################################
 # Description:
-#	Script to provision devices using swiftdialog <https://github.com/bartreardon/swiftDialog>
+#	This script is to decode the encoded LAPS password and display this
+#	to the end user/support engineer.
 #
-#########################################################################################
+############################################################################
 # Copyright © 2023 Perry Driscoll <https://github.com/PezzaD84>
 #
 # This file is free software and is shared "as is" without any warranty of 
@@ -19,196 +18,72 @@
 # it, with or without modifications, as long as this notice is preserved. 
 # All usage is at your own risk and in no event shall the authors or 
 # copyright holders be liable for any claim, damages or other liability.
-#########################################################################################
+############################################################################
+#
+# JAMF Script Variables
+# $4: JSS URL
+# $5: Encoded API Credentials
+# $6: Switch for password rotation (true or false)
+# $7: Slack WebHook URL
+# $8: Service desk URL
+#
+############################################################################
 
-#########################################################################################
-# Grab currently logged in user
-#########################################################################################
+############################################################################
+# Variables
+############################################################################
 
 CURRENT_USER=$(ls -l /dev/console | awk '{ print $3 }')
+DEVICE=`hostname`
+LAPSLOG="/Library/.LAPS/Logs/LAPS.log"
+SERVICEDESK="$8"
 
-#########################################################################################
-# Add your custom settings here.
-# orgLogo is recommended to be a png or jpeg
-# banner is recommended to be a png or jpeg at 850x150
-#########################################################################################
 
-# Organisation logo
-orgLogo=""
-# Banner image e.g. company name
-banner=""
-# Welcome message to display to users to inform them of what is happening
-welcomeMessage="Welcome to your new mac $CURRENT_USER! \n\n We will now run through some basic configuration and install some common apps to help get you up and running. \n\n Sit back and have a break while we get things ready."
-# Small text box which can include extra info
-infoText="TEST INFO MESSAGE \n\n This is a place holder to test the extra info box"
-# Text to display in the help menu
-helpText="TEST HELP MESSAGE \n\n This is a place holder to test the help message."
+############################################################################
+# Create Log
+############################################################################
 
-#########################################################################################
-# Policy array
-# Format must be as follows:
-# "Application Name,JAMF Trigger,Icon Hash" - how to find the hash can be found here https://vimeo.com/772998915 (thanks to Dan Snelson)
-#########################################################################################
+if [ -f "$LAPSLOG" ]; then
+	echo "Log already exists. Continuing setup....."
+else
+	echo "Log does not exist. Creating Log now....."
+	mkdir -p /Library/.LAPS/Logs/
+	touch "$LAPSLOG" 
+fi
 
-array=(
-	"Google Chrome,installChrome2,fb48e96c34d449ef5ff0d56e983a034927320195be69a02c076b6270a4e19d54"
-	"Slack,installSlack,4c854db5ebeed437a6c7bf34cfb01fc4631ace8a339183f78d94adef74bbab1f"
-	"Atom,installAtom,e4bcac54cc087b73724bc958df90682b5b68064d4760713e3135da722f9d8845"
-	"zoom,installZoom,89c52ab16cabcc11aa955521b7589955e8ea2995f250f4b65356a46653bd734b"
-	"Spotify,installSpotify2,7be69c3635be12e83e7e69c2c648e3ace478dea8d21b9db851a65e70e84acc5f"
-	"Final Config,finalConfig,3b0765f097a797e05d960186b475375ce5953b7d09f9bd98584c3bb14cae2065"
-)
+echo "***** LAPS Decode `date '+%d/%m/%Y %T'`"
+echo "***** LAPS Decode `date '+%d/%m/%Y %T'`" >> "$LAPSLOG"
 
-#########################################################################################
-# Test mode
-# If set to true no policies will run, only the application list will be populated
-# Set to true by default
-#########################################################################################
-
-TESTING="true"
-
-#########################################################################################
-# Extra info
-# If set to true the user will be prompted to enter an Asset Tag, Email address and User name.
-# Set to false by default
-#########################################################################################
-
-EXTRAINFO="false"
-
-	# If extra info is turned on you can set the device name to be the same as the Asset Tag. False by default.
-	AssetToName="false"
-
-#########################################################################################
-#########################################################################################
-######     !!TRY NOT TO EDIT BELOW HERE OR THE WHOLE THING MIGHT EXPLODE!!         ######
-#########################################################################################
-#########################################################################################
-
-#########################################################################################
-# Variables
-#########################################################################################
-
-jamfBinary="/usr/local/bin/jamf"
-commandLog="/Users/Shared/.ASMBL/Logs/DialogCommand.log"
-AssembleLog="/Users/Shared/.ASMBL/Logs/Assemble.log"
-
-#########################################################################################
+##############################################################
 # Functions
-#########################################################################################
+##############################################################
 
 DialogInstall(){
-	if [[ $TESTING =~ ^[tT]rue$ ]]; then
-		echo "TEST MODE ENABLED. Will not install Dialog." >> $AssembleLog
-	else
-	pkgfile="SwiftDialog.pkg"
-	logfile="/Library/Logs/SwiftDialogInstallScript.log"
-	URL="https://github.com$(curl -sfL "$(curl -sfL "https://github.com/bartreardon/swiftDialog/releases/latest" | tr '"' "\n" | grep -i "expanded_assets" | head -1)" | tr '"' "\n" | grep -i "^/.*\/releases\/download\/.*\.pkg" | head -1)"
 	
-	# Start Log entries
-	echo "--" >> ${logfile}
-	echo "`date`: Downloading latest version." >> ${logfile}
+		pkgfile="SwiftDialog.pkg"
+		logfile="/Library/Logs/SwiftDialogInstallScript.log"
+		URL="https://github.com$(curl -sfL "$(curl -sfL "https://github.com/bartreardon/swiftDialog/releases/latest" | tr '"' "\n" | grep -i "expanded_assets" | head -1)" | tr '"' "\n" | grep -i "^/.*\/releases\/download\/.*\.pkg" | head -1)"
+		
+		# Start Log entries
+		echo "--" >> ${logfile}
+		echo "`date`: Downloading latest version." >> ${logfile}
+		
+		# Download installer
+		curl -s -L -J -o /tmp/${pkgfile} ${URL}
+		echo "`date`: Installing..." >> ${logfile}
+		
+		# Change to installer directory
+		cd /tmp
+		
+		# Install application
+		sudo installer -pkg ${pkgfile} -target /
+		sleep 5
+		echo "`date`: Deleting package installer." >> ${logfile}
+		
+		# Remove downloaded installer
+		rm /tmp/"${pkgfile}"
 	
-	# Download installer
-	curl -s -L -J -o /tmp/${pkgfile} ${URL}
-	echo "`date`: Installing..." >> ${logfile}
-	
-	# Change to installer directory
-	cd /tmp
-	
-	# Install application
-	sudo installer -pkg ${pkgfile} -target /
-	sleep 5
-	echo "`date`: Deleting package installer." >> ${logfile}
-	
-	# Remove downloaded installer
-	rm /tmp/"${pkgfile}"
-	fi
 }
-
-pauseJamfFramework(){
-	## Update Jamf frameworks
-	/usr/local/bin/jamf manage
-	
-	## Disable Jamf Check-Ins
-	jamftasks=($( find /Library/LaunchDaemons -iname "*task*" -type f -maxdepth 1 ))
-	for ((i=0;i<${#jamftasks[@]};i++))
-	do
-		/bin/launchctl unload -w "${jamftasks[$i]}"
-	done
-	
-	## Kill any check-in in progress
-	jamfpid=$( ps -ax | grep "jamf policy -randomDelaySeconds" | grep -v "grep" | awk '{ print $1 }' )
-	if [ "$jamfpid" != "" ];
-	then
-		kill -9 "$jamfpid"
-	fi	
-}
-
-restartJamfFramework(){
-	## Re-enable Jamf management
-	for ((i=0;i<${#jamftasks[@]};i++))
-	do
-		/bin/launchctl load -w "${jamftasks[$i]}"
-	done
-}
-
-#########################################################################################
-# Create Master Assemble Log
-#########################################################################################
-
-if [ -f $AssembleLog ]; then
-	echo "______________________________________________________________________" >> $AssembleLog
-	echo "######## ASSEMBLE RUN ON: `date +%d.%m.%Y:%T` ########" >> $AssembleLog
-	echo "Assemble master log already exists. Continuing to assemble...." >> $AssembleLog
-	sleep 3
-else
-	echo "______________________________________________________________________" >> $AssembleLog
-	echo "######## ASSEMBLE RUN ON: `date +%d.%m.%Y:%T` ########" >> $AssembleLog
-	echo "Assemble has not run before. Creating master log now...." >> $AssembleLog
-	mkdir -p /Users/Shared/.ASMBL/Logs/
-	sleep 3
-fi
-
-#########################################################################################
-# Check Dock is running before starting
-#########################################################################################
-
-DOCK_STATUS=$(pgrep -x Dock)
-while [[ "$DOCK_STATUS" == "" ]]; do
-  echo "Dock not running yet... please wait..." >> $AssembleLog
-  sleep 3
-  DOCK_STATUS=$(pgrep -x Dock)
-done
-
-echo "Dock is running as process $DOCK_STATUS. Starting assemble....." >> $AssembleLog
-sleep 3
-
-if [[ $TESTING =~ ^[tT]rue$ ]]; then
-	echo "TEST MODE ENABLED. Will not Pause JAMF Agent" >> $AssembleLog
-else
-	echo "Pausing JAMF Agent while build proceeds....." >> $AssembleLog
-	pauseJamfFramework
-fi
-
-#########################################################################################
-# Install Rosetta if device is running Apple Silicon
-#########################################################################################
-
-processor=$(uname -m)
-
-if [[ $TESTING =~ ^[tT]rue$ ]]; then
-	echo "TEST MODE ENABLED. Will not install Rosetta." >> $AssembleLog
-else
-	if [[ $processor == arm64 ]]; then
-	
-		echo "Mac is arm64. Installing Rosetta....." >> $AssembleLog
-		echo A | sudo softwareupdate --install-rosetta
-		Sleep 5
-		echo "Rosetta Installed. Continuing Build....." >> $AssembleLog
-	else
-		echo "Mac is Intel. Continuing Build....." >> $AssembleLog
-	fi
-fi
 
 ##############################################################
 # Check if SwiftDialog is installed (SwiftDialog created by Bart Reardon https://github.com/bartreardon/swiftDialog)
@@ -216,342 +91,187 @@ fi
 
 if ! command -v dialog &> /dev/null
 then
-	echo "SwiftDialog is not installed. App will be installed now....." >> $AssembleLog
+	echo "SwiftDialog is not installed. App will be installed now....."
+	echo "SwiftDialog is not installed. App will be installed now....." >> $LAPSLOG
 	sleep 2
 	
 	DialogInstall
 	
 else
-	echo "SwiftDialog is installed. Checking installed version....." >> $AssembleLog
+	echo "SwiftDialog is installed. Checking installed version....."
+	echo "SwiftDialog is installed. Checking installed version....." >> $LAPSLOG
 	
 	installedVersion=$(dialog -v | sed 's/./ /6' | awk '{print $1}')
 	
 	latestVersion=$(curl -sfL "https://github.com/bartreardon/swiftDialog/releases/latest" | tr '"' "\n" | grep -i "expanded_assets" | head -1 | tr '/' ' ' | awk '{print $7}' | tr -d 'v')
 	
 	if [[ $installedVersion != $latestVersion ]]; then
-		echo "Dialog needs updating" >> $AssembleLog
+		echo "Dialog needs updating"
+		echo "Dialog needs updating" >> $LAPSLOG
 		DialogInstall
 	else
-		echo "Dialog is up to date. Continuing to assemble...." >> $AssembleLog
+		echo "Dialog is up to date. Continuing to assemble...."
+		echo "Dialog is up to date. Continuing to assemble...." >> $LAPSLOG
 	fi
 	sleep 3
 fi
 
-#########################################################################################
-# Check if assemble command file exists
-#########################################################################################
+############################################################################
+# API Credentials
+############################################################################
 
-if [ -f $commandLog ]; then
-	echo "Assemble command file found. Continuing to assemble...." >> $AssembleLog
-	sleep 3
-else
-	echo "Assemble has not run before. Creating command file now...." >> $AssembleLog
-	mkdir -p /Users/Shared/.ASMBL/Logs/
-	sleep 3
-fi
-
-#########################################################################################
-# Dialog window for Start message
-#########################################################################################
-
-progressTotal=${#array[@]}
-
-if [[ "$banner" == "" ]]; then
-	dialog \
-	--button1disabled \
-	--title Assemble \
-	--position centre \
-	--icon "$orgLogo" \
-	--message "$welcomeMessage" \
-	--height 500 \
-	--alignment centre \
-	--messagefont 'name=Arial,size=16' \
-	--blurscreen \
-	--progress $progressTotal \
-	--commandfile $commandLog \
-	--infobox "$infoText" \
-	--helpmessage "$helpText"
-	--infotext "Version 2.0" &
-	sleep 10
+encryptedcreds="$5"
 	
-	if [[ $EXTRAINFO =~ ^[tT]rue$ ]]; then
-		
-		echo "EXTRA INFO SWITCHED ON. Continuing to gather Email, Username and Asset Tag...." >> $AssembleLog
-		
-		asset=$(dialog \
---title Assemble \
---position centre \
---icon "$orgLogo" \
---message "$welcomeMessage\n\nPlease enter the extra information required below." \
---height 500 \
---alignment center \
---blurscreen \
---messagefont 'name=Arial,size=16' \
---infobox "$infoText" \
---infotext "Version 2.0" \
---helpmessage "$helpText" \
---textfield "Email Address:",required,prompt="username@company.com" \
---textfield "User Name:",required,prompt="User Name" \
---textfield "Asset Tag:",required,prompt="#######" \
---json)
-		
-		email=$(echo $asset | awk -F '"Email Address:" : "' '{print$2}' | awk -F '"' '{print$1}')
-		user=$(echo $asset | awk -F '"User Name:" : "' '{print$2}' | awk -F '"' '{print$1}')
-		assetTag=$(echo $asset | awk -F '"Asset Tag:" : "' '{print$2}' | awk -F '"' '{print$1}')
-		
-		echo "Email is: $email" >> $AssembleLog
-		echo "User name is: $user" >> $AssembleLog
-		echo "Asset Tag is: $assetTag" >> $AssembleLog
-		
-		if [[ $TESTING =~ ^[tT]rue$ ]]; then
-			echo "TEST MODE ENABLED. Inventory will not be updated." >> $AssembleLog
-		else
-			echo "Updating device inventory." >> $AssembleLog
-			$jamfBinary recon -email $email
-			$jamfBinary recon -endUsername $user
-			$jamfBinary recon -assetTag "$assetTag"
-		fi	
-		# Name Device the same as the asset tag
-		if [[ $AssetToName =~ ^[tT]rue$ ]]; then
-			echo "ASSET TO NAME IS SWITCHED ON. Setting device name to asset tag...." >> $AssembleLog
-				if [[ $TESTING =~ ^[tT]rue$ ]]; then
-					echo "TEST MODE ENABLED. Device name will not be updated." >> $AssembleLog
-				else
-				/usr/sbin/scutil --set ComputerName "$assetTag"
-				/usr/sbin/scutil --set LocalHostName "$assetTag"
-				/usr/sbin/scutil --set HostName "$assetTag"
-		
-				dscacheutil -flushcache
+token=$(curl -s -H "Content-Type: application/json" -H "Authorization: Basic ${encryptedcreds}" -X POST "$4/api/v1/auth/token" | grep 'token' | tr -d '"',',' | sed -e 's#token :##' | xargs)
+
+############################################################################
+# Pop up for Device name
+############################################################################
+
+message=$(dialog \
+--bannerimage "/Library/.LAPS/Branding/Wallpapers/GenericLapsBanner.png" \
+--title "none" \
+--icon "/Library/.LAPS/Branding/Icons/lock icon.png" --iconsize 100 \
+--message "Please enter the name of the device you wish to see the LAPS password for. \n\n You must also provide a reason for viewing the LAPS Password for auditing." \
+--messagefont "name=Arial,size=17" \
+--button1text "Continue" \
+--button2text "Quit" \
+--textfield "Device name,required" \
+--textfield "Reason,required" \
+--ontop \
+--regular \
+--json \
+--moveable
+)
 			
-				echo "Computer name has been set..." >> $AssembleLog
-				echo "`scutil --get ComputerName`" >> $AssembleLog
-				fi
-		fi
-	else
-		echo "EXTRA INFO IS SWITCHED OFF." >> $AssembleLog
-	fi
-	
-else
-	dialog \
-	--button1disabled \
-	--title none \
-	--position centre \
-	--bannerimage "$banner" \
-	--icon "$orgLogo" \
-	--message "$welcomeMessage" \
-	--height 500 \
-	--alignment centre \
-	--messagefont 'name=Arial,size=16' \
-	--blurscreen \
-	--progress $progressTotal \
-	--commandfile $commandLog \
-	--infobox "$infoText" \
-	--helpmessage "$helpText"
-	--infotext "Version 2.0" &
-	sleep 10
-	
-	if [[ $EXTRAINFO =~ ^[tT]rue$ ]]; then
-		
-		echo "EXTRA INFO SWITCHED ON. Continuing to gather Email, Username and Asset Tag...." >> $AssembleLog
-		
-		asset=$(dialog \
---title none \
---position centre \
---bannerimage "$banner" \
---icon "$orgLogo" \
---message "$welcomeMessage\n\nPlease enter the extra information required below." \
---height 500 \
---alignment center \
---blurscreen \
---messagefont 'name=Arial,size=16' \
---infobox "$infoText" \
---infotext "Version 2.0" \
---helpmessage "$helpText" \
---textfield "Email Address:",required,prompt="username@company.com" \
---textfield "User Name:",required,prompt="User Name" \
---textfield "Asset Tag:",required,prompt="#######" \
---json)
-		
-		email=$(echo $asset | awk -F '"Email Address:" : "' '{print$2}' | awk -F '"' '{print$1}')
-		user=$(echo $asset | awk -F '"User Name:" : "' '{print$2}' | awk -F '"' '{print$1}')
-		assetTag=$(echo $asset | awk -F '"Asset Tag: FT-MW" : "' '{print$2}' | awk -F '"' '{print$1}')
-		
-		echo "Email is: $email" >> $AssembleLog
-		echo "User name is: $user" >> $AssembleLog
-		echo "Asset Tag is: FT-MW$assetTag" >> $AssembleLog
-		
-		if [[ $TESTING =~ ^[tT]rue$ ]]; then
-			echo "TEST MODE ENABLED. Inventory will not be updated." >> $AssembleLog
-		else
-			echo "Updating device inventory." >> $AssembleLog
-			$jamfBinary recon -email $email
-			$jamfBinary recon -endUsername $user
-			$jamfBinary recon -assetTag "$assetTag"
+name=$(echo $message | awk -F '"Device name" : "' '{print$2}' | awk -F '"' '{print$1}')
+reason=$(echo $message | awk -F '"Reason" : "' '{print$2}' | awk -F '"' '{print$1}') # Thanks to ons-mart https://github.com/ons-mart
 			
-			# Name Device the same as the asset tag
-			if [[ $AssetToName =~ ^[tT]rue$ ]]; then 
-				/usr/sbin/scutil --set ComputerName "$assetTag"
-				/usr/sbin/scutil --set LocalHostName "$assetTag"
-				/usr/sbin/scutil --set HostName "$assetTag"
+if [[ $name == "" ]] || [[ $reason == "" ]]; then
+	echo "Aborting"
+	exit 1
+fi			
+
+############################################################################
+# Grab decoder key for password
+############################################################################
+	
+cryptkey=$(curl -s -X "GET" "$4/JSSResource/computers/name/$name/subset/extension_attributes" -H "Accept: application/json" -H "Authorization:Bearer ${token}" | tr '{' '\n' | grep -i CryptKey | tr '"' ' ' | awk '{print $16}')
+
+############################################################################			
+# Grab secret for decoder
+############################################################################
+	
+secretkey=$(curl -s -X "GET" "$4/JSSResource/computers/name/$name/subset/extension_attributes" -H "Accept: application/json" -H "Authorization:Bearer ${token}" | tr '{' '\n' | grep -i Secret | tr '"' ' ' | awk '{print $16}')
+
+############################################################################
+# Decode password and display
+############################################################################
+	
+passwd=$(echo $cryptkey | openssl enc -aes-256-cbc -md sha512 -a -d -salt -pass pass:$secretkey)
 				
-				dscacheutil -flushcache
-				
-				echo "Computer name has been set..." >> $AssembleLog
-				echo "`scutil --get ComputerName`" >> $AssembleLog
-			fi
-			
-		fi
-	else
-		echo "EXTRA INFO IS SWITCHED OFF." >> $AssembleLog
-	fi
+dialog \
+--bannerimage "/Library/.LAPS/Branding/Wallpapers/GenericLapsBanner.png" \
+--title "none" \
+--icon "/Library/.LAPS/Branding/Icons/Open Lock Icon.png" --iconsize 100 \
+--message "The LAPS Password for $name is: $passwd \n\n This message will close after 10seconds." \
+--messagefont "name=Arial,size=17" \
+--timer \
+--ontop \
+--moveable \
+--small &
+
+echo "The LAPS Password for $name was viewed by $CURRENT_USER on $DEVICE"
+echo "The LAPS Password for $name was viewed by $CURRENT_USER on $DEVICE" >> "$LAPSLOG"
+echo "Reason for viewing password: $reason"
+echo "Reason for viewing password: $reason" >> "$LAPSLOG"
+
+############################################################################
+# Slack notification
+############################################################################
 	
-fi
-
-#########################################################################################
-# Caffinate Dialog process
-#########################################################################################
-
-dialogPID=$(pgrep -x Dialog)
-caffeinate -disu -w $dialogPID &
-
-#########################################################################################
-# Dialog window update with list of apps
-#########################################################################################
-
-echo "message: Your mac is now being provisioned with the following settings and applications." >> $commandLog
-echo "progresstext: Starting Installation...." >> $commandLog
-echo "list: " >> $commandLog
-echo "listitem: delete, index: 0" >> $commandLog
-echo "height: 600" >> $commandLog
-
-for appStatus in "${array[@]}"; do
-	
-	echo "listitem: add, title: $(echo $appStatus | cut -d ',' -f1), icon: https://ics.services.jamfcloud.com/icon/hash_$(echo $appStatus | cut -d ',' -f3), status: pending, statustext: pending" >> $commandLog
-	
-done
-
-sleep 5
-
-#########################################################################################
-# Application installation
-#########################################################################################
-
-progressStep=1
-installer=$(pgrep installer)
-
-until [ $progressStep -gt $progressTotal ]; do
-
-	for appName in "${array[@]}"; do
-		
-		echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: wait, statustext: installing" >> $commandLog
-		echo "progress: $progressStep" >> $commandLog
-		echo "progresstext: Installing $(echo $appName | cut -d ',' -f1)...." >> $commandLog
-		
-			if [[ $TESTING =~ ^[tT]rue$ ]]; then
-				echo "TEST MODE ENABLED. $(echo $appName | cut -d ',' -f1) will not be installed." >> $AssembleLog
-			else
-				echo "Applications........ ASSEMBLE!" >> $AssembleLog
-				$jamfBinary policy -event $(echo $appName | cut -d ',' -f2)
-			fi
-	
-			sleep 1
-		
-			appInstalled=$(ls /Applications/ | grep -i "$(echo $appName | cut -d ',' -f1)")
-			MSappInstalled=$(ls /Applications/ | grep -i -m2 Microsoft | tail -n1 | awk '{print $1}')
-			finalConf=$(ls /Users/Shared/.ASMBL/Logs/ | grep "Final" | sed -e 's#.log##')
-			
-			sleep 1
-			
-				if [[ $appInstalled == $(echo $appName | cut -d ',' -f1).* ]] || [[ $MSappInstalled == $(echo $appName | cut -d ',' -f1 | awk '{print $1}') ]] || [[ $finalConf == $(echo $appName | cut -d ',' -f1) ]]; then
-					echo "$(echo $appName | cut -d ',' -f1) Installed" >> $AssembleLog
-					echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: success, statustext: installed" >> $commandLog
-					echo "progresstext: Installed $(echo $appName | cut -d ',' -f1)" >> $commandLog
-					sleep 4
-				else
-					echo "$(echo $appName | cut -d ',' -f1) failed to install" >> $AssembleLog
-					echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: fail, statustext: Failed" >> $commandLog
-					echo "progresstext: Failed to install $(echo $appName | cut -d ',' -f1)" >> $commandLog
-					sleep 4
-				fi
-		
-		let "progressStep+=1"
-		sleep 2
-	
-	done
-done
-sleep 2
-
-echo "progresstext: Setup Complete!" >> $commandLog
-
-sleep 2
-
-#########################################################################################
-# Dialog message to show completion
-#########################################################################################
-
-# Check to see if FileVault Deferred enablement is active - do not edit below
-FV_DEFERRED_STATUS=$(fdesetup status | grep "Deferred" | cut -d ' ' -f6)
-
-# Logic to log user out if FileVault is detected. Otherwise, app will close.
-if [[ "$FV_DEFERRED_STATUS" = "active" ]]; then
-	
-	echo "Filevault is in deferred mode. User must log out and log in." >> $AssembleLog
-	
-	if [[ "$banner" == "" ]]; then
-		dialog \
-		--title Assemble \
-		--position centre \
-		--icon "$orgLogo" \
-		--height 500 \
-		--alignment centre \
-		--message "Setup Complete! \n\n $CURRENT_USER you are now all set and ready to go. Please click Logout to finish encrypting your device." \
-		--messagefont 'name=Arial,size=16' \
-		--blurscreen \
-		--infotext "Version 2.0" \
-		--button1text Logout \
-		--button1shellaction "launchctl bootout user/$(id -u $CURRENT_USER)" &
-	else
-		dialog \
-		--title none \
-		--bannerimage "$banner" \
-		--position centre \
-		--icon "$orgLogo" \
-		--height 500 \
-		--alignment centre \
-		--message "Setup Complete! \n\n $CURRENT_USER you are now all set and ready to go. Please click Logout to finish encrypting your device." \
-		--messagefont 'name=Arial,size=16' \
-		--blurscreen \
-		--infotext "Version 2.0" \
-		--button1text Logout \
-		--button1shellaction "launchctl bootout user/$(id -u $CURRENT_USER)" &
-	fi
-	sleep 2
-	
-	echo "quit:" >> $commandLog
-	
-	if [[ $TESTING =~ ^[tT]rue$ ]]; then
-		echo "TEST MODE ENABLED. Final Inventory update will not happen." >> $AssembleLog
-	else
-		echo "Final device inventory update." >> $AssembleLog
-		$jamfBinary recon
-	fi
-	sleep 120
-	exit 0
-	
+if [[ $7 == "" ]]; then
+	echo "No slack URL configured"
 else
-	
-	echo "height: 500" >> $commandLog
-	echo "list: clear" >> $commandLog
-	echo "message: Setup Complete! \n\n $CURRENT_USER you are now all set and ready to go. Please click finish." >> $commandLog
-	echo "button1: enable" >> $commandLog
-	echo "button1text: Finish" >> $commandLog
-	
-	if [[ $TESTING =~ ^[tT]rue$ ]]; then
-		echo "TEST MODE ENABLED. Final Inventory will not be updated." >> $AssembleLog
-	else
-		echo "Final device inventory update." >> $AssembleLog
-		$jamfBinary recon
+	if [[ $SERVICEDESK == "" ]]; then
+		SERVICEDESK="https://www.slack.com"
 	fi
-	sleep 120
-	exit 0
+curl -X POST -H 'Content-type: application/json' \
+	-d \
+	'{
+	"blocks": [
+		{
+			"type": "header",
+			"text": {
+				"type": "plain_text",
+				"text": "LAPS Password Requested:closed_lock_with_key:",
+			}
+		},
+		{
+			"type": "divider"
+		},
+		{
+			"type": "section",
+			"fields": [
+				{
+					"type": "mrkdwn",
+					"text": ">*Device Name:*\n>'"$name"'"
+				},
+				{
+					"type": "mrkdwn",
+					"text": ">*Requested by:*\n>'"$CURRENT_USER"'"
+				},
+				{
+					"type": "mrkdwn",
+					"text": ">*Reason for Request:*\n>'"$reason"'"
+				},
+			]
+		},
+		{
+		"type": "actions",
+			"elements": [
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Challenge Request",
+						"emoji": true
+					},
+					"style": "danger",
+					"action_id": "actionId-0",
+					"url": "'"$SERVICEDESK"'"
+				}
+			]
+		}
+	]
+}' \
+$7
 fi
+
+############################################################################
+# Final Decoder checks for password rotation
+############################################################################
+	
+if [[ $6 == "True" ]] || [[ $6 == "true" ]]; then
+	echo "Password rotation has been set to True. Password for $name will be reset at next login"
+	echo "Password rotation has been set to True. Password for $name will be reset at next login." >> "$LAPSLOG"
+	
+############################################################################
+# Reset local admin password
+############################################################################
+	
+	resetID=$(curl -s -X "GET" "$4/JSSResource/computers/name/$name/subset/ExtensionAttributes" -H "Accept: application/json" -H "Authorization:Bearer ${token}" | tr '{' '\n' | grep -i Reset | tr ':' ' ' | tr ',' ' ' | awk '{print $2}')
+		
+	curl -s -X "PUT" "$4/JSSResource/computers/name/$name/subset/extension_attributes" \
+	-H "Content-Type: application/xml" \
+	-H "Accept: application/xml" \
+	-H "Authorization:Bearer ${token}" \
+	-d "<computer><extension_attributes><extension_attribute><id>$resetID</id><name>LAPS Reset Password</name><type>String</type><value>Yes</value></extension_attribute></extension_attributes></computer>"
+
+else
+	echo "Password rotation has not been specified."
+	echo "Password rotation has not been specified." >> "$LAPSLOG"
+
+fi
+
+exit 0
