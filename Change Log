@@ -1,0 +1,12 @@
+Change log of feature updates and improvments
+
+# Assemble - v2.1
+
+## Progress bar updated
+    The logic behind updateing the progress bar has been updated to manage it more accurately. 
+## Icon Hash finder updated
+    There is an added step to find the Icon using the hash now. It now looks at an additional JAMF server to find the icon if it fails on the default server.
+## Log output updated
+    Log output now uses "tee" instead of a redirect so that the logs alos appear in JAMF.
+## Installation Validation updated
+    Installation validation has been updated to read the JAMF policy logs for more accurately identifying if the app or script has run successfully.
