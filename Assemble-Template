@@ -1,15 +1,9 @@
 #!/bin/bash
 #
-# Script to provision a new device using swiftDialog
-#
-# Created by Perry Driscoll 28/9/2022
-#
-# Last Upadte 8/12/2022
-#
 # Author  : Perry Driscoll - https://github.com/PezzaD84
 # Created : 28/9/2022
-# Updated : 30/3/2023
-# Version : v2
+# Updated : 11/1/2023
+# Version : v2.1
 #
 #########################################################################################
 # Description:
@@ -95,6 +89,7 @@ EXTRAINFO="false"
 jamfBinary="/usr/local/bin/jamf"
 commandLog="/Users/Shared/.ASMBL/Logs/DialogCommand.log"
 AssembleLog="/Users/Shared/.ASMBL/Logs/Assemble.log"
+PolicyLog="/Users/Shared/.ASMBL/Logs/policy.log"
 
 #########################################################################################
 # Functions
@@ -102,7 +97,7 @@ AssembleLog="/Users/Shared/.ASMBL/Logs/Assemble.log"
 
 DialogInstall(){
 	if [[ $TESTING =~ ^[tT]rue$ ]]; then
-		echo "TEST MODE ENABLED. Will not install Dialog." >> $AssembleLog
+		echo "TEST MODE ENABLED. Will not install Dialog." | tee -a $AssembleLog
 	else
 	pkgfile="SwiftDialog.pkg"
 	logfile="/Library/Logs/SwiftDialogInstallScript.log"
@@ -161,14 +156,14 @@ restartJamfFramework(){
 #########################################################################################
 
 if [ -f $AssembleLog ]; then
-	echo "______________________________________________________________________" >> $AssembleLog
-	echo "######## ASSEMBLE RUN ON: `date +%d.%m.%Y:%T` ########" >> $AssembleLog
-	echo "Assemble master log already exists. Continuing to assemble...." >> $AssembleLog
+	echo "______________________________________________________________________" | tee -a $AssembleLog
+	echo "######## ASSEMBLE RUN ON: `date +%d.%m.%Y:%T` ########" | tee -a $AssembleLog
+	echo "Assemble master log already exists. Continuing to assemble...." | tee -a $AssembleLog
 	sleep 3
 else
-	echo "______________________________________________________________________" >> $AssembleLog
-	echo "######## ASSEMBLE RUN ON: `date +%d.%m.%Y:%T` ########" >> $AssembleLog
-	echo "Assemble has not run before. Creating master log now...." >> $AssembleLog
+	echo "______________________________________________________________________" | tee -a $AssembleLog
+	echo "######## ASSEMBLE RUN ON: `date +%d.%m.%Y:%T` ########" | tee -a $AssembleLog
+	echo "Assemble has not run before. Creating master log now...." | tee -a $AssembleLog
 	mkdir -p /Users/Shared/.ASMBL/Logs/
 	sleep 3
 fi
@@ -179,18 +174,18 @@ fi
 
 DOCK_STATUS=$(pgrep -x Dock)
 while [[ "$DOCK_STATUS" == "" ]]; do
-  echo "Dock not running yet... please wait..." >> $AssembleLog
+  echo "Dock not running yet... please wait..." | tee -a $AssembleLog
   sleep 3
   DOCK_STATUS=$(pgrep -x Dock)
 done
 
-echo "Dock is running as process $DOCK_STATUS. Starting assemble....." >> $AssembleLog
+echo "Dock is running as process $DOCK_STATUS. Starting assemble....." | tee -a $AssembleLog
 sleep 3
 
 if [[ $TESTING =~ ^[tT]rue$ ]]; then
-	echo "TEST MODE ENABLED. Will not Pause JAMF Agent" >> $AssembleLog
+	echo "TEST MODE ENABLED. Will not Pause JAMF Agent" | tee -a $AssembleLog
 else
-	echo "Pausing JAMF Agent while build proceeds....." >> $AssembleLog
+	echo "Pausing JAMF Agent while build proceeds....." | tee -a $AssembleLog
 	pauseJamfFramework
 fi
 
@@ -201,16 +196,16 @@ fi
 processor=$(uname -m)
 
 if [[ $TESTING =~ ^[tT]rue$ ]]; then
-	echo "TEST MODE ENABLED. Will not install Rosetta." >> $AssembleLog
+	echo "TEST MODE ENABLED. Will not install Rosetta." | tee -a $AssembleLog
 else
 	if [[ $processor == arm64 ]]; then
 	
-		echo "Mac is arm64. Installing Rosetta....." >> $AssembleLog
+		echo "Mac is arm64. Installing Rosetta....." | tee -a $AssembleLog
 		echo A | sudo softwareupdate --install-rosetta
 		Sleep 5
-		echo "Rosetta Installed. Continuing Build....." >> $AssembleLog
+		echo "Rosetta Installed. Continuing Build....." | tee -a $AssembleLog
 	else
-		echo "Mac is Intel. Continuing Build....." >> $AssembleLog
+		echo "Mac is Intel. Continuing Build....." | tee -a $AssembleLog
 	fi
 fi
 
@@ -220,23 +215,23 @@ fi
 
 if ! command -v dialog &> /dev/null
 then
-	echo "SwiftDialog is not installed. App will be installed now....." >> $AssembleLog
+	echo "SwiftDialog is not installed. App will be installed now....." | tee -a $AssembleLog
 	sleep 2
 	
 	DialogInstall
 	
 else
-	echo "SwiftDialog is installed. Checking installed version....." >> $AssembleLog
+	echo "SwiftDialog is installed. Checking installed version....." | tee -a $AssembleLog
 	
 	installedVersion=$(dialog -v | sed 's/./ /6' | awk '{print $1}')
 	
-	latestVersion=$(curl -sfL "https://github.com/bartreardon/swiftDialog/releases/latest" | tr '"' "\n" | grep -i "expanded_assets" | head -1 | tr '/' ' ' | awk '{print $7}' | tr -d 'v')
-	
+	latestVersion=$(curl -sfL "https://github.com/bartreardon/swiftDialog/releases/latest" | tr '"' "\n" | grep -i "expanded_assets" | head -1 | tr '/' ' ' | awk '{print $7}' | tr -d 'v' | awk -F '-' '{print $1}')
+
 	if [[ $installedVersion != $latestVersion ]]; then
-		echo "Dialog needs updating" >> $AssembleLog
+		echo "Dialog needs updating" | tee -a $AssembleLog
 		DialogInstall
 	else
-		echo "Dialog is up to date. Continuing to assemble...." >> $AssembleLog
+		echo "Dialog is up to date. Continuing to assemble...." | tee -a $AssembleLog
 	fi
 	sleep 3
 fi
@@ -246,10 +241,10 @@ fi
 #########################################################################################
 
 if [ -f $commandLog ]; then
-	echo "Assemble command file found. Continuing to assemble...." >> $AssembleLog
+	echo "Assemble command file found. Continuing to assemble...." | tee -a $AssembleLog
 	sleep 3
 else
-	echo "Assemble has not run before. Creating command file now...." >> $AssembleLog
+	echo "Assemble has not run before. Creating command file now...." | tee -a $AssembleLog
 	mkdir -p /Users/Shared/.ASMBL/Logs/
 	sleep 3
 fi
@@ -271,7 +266,7 @@ if [[ "$banner" == "" ]]; then
 	--alignment centre \
 	--messagefont 'name=Arial,size=16' \
 	--blurscreen \
-	--progress $progressTotal \
+	--progress \
 	--commandfile $commandLog \
 	--infobox "$infoText" \
 	--helpmessage "$helpText" &
@@ -279,7 +274,7 @@ if [[ "$banner" == "" ]]; then
 	
 	if [[ $EXTRAINFO =~ ^[tT]rue$ ]]; then
 		
-		echo "EXTRA INFO SWITCHED ON. Continuing to gather Email, Username and Asset Tag...." >> $AssembleLog
+		echo "EXTRA INFO SWITCHED ON. Continuing to gather Email, Username and Asset Tag...." | tee -a $AssembleLog
 		
 		asset=$(dialog \
 --title Assemble \
@@ -301,23 +296,23 @@ if [[ "$banner" == "" ]]; then
 		user=$(echo $asset | awk -F '"User Name:" : "' '{print$2}' | awk -F '"' '{print$1}')
 		assetTag=$(echo $asset | awk -F '"Asset Tag:" : "' '{print$2}' | awk -F '"' '{print$1}')
 		
-		echo "Email is: $email" >> $AssembleLog
-		echo "User name is: $user" >> $AssembleLog
-		echo "Asset Tag is: $assetTag" >> $AssembleLog
+		echo "Email is: $email" | tee -a $AssembleLog
+		echo "User name is: $user" | tee -a $AssembleLog
+		echo "Asset Tag is: $assetTag" | tee -a $AssembleLog
 		
 		if [[ $TESTING =~ ^[tT]rue$ ]]; then
-			echo "TEST MODE ENABLED. Inventory will not be updated." >> $AssembleLog
+			echo "TEST MODE ENABLED. Inventory will not be updated." | tee -a $AssembleLog
 		else
-			echo "Updating device inventory." >> $AssembleLog
+			echo "Updating device inventory." | tee -a $AssembleLog
 			$jamfBinary recon -email $email
 			$jamfBinary recon -endUsername $user
 			$jamfBinary recon -assetTag "$assetTag"
 		fi	
 		# Name Device the same as the asset tag
 		if [[ $AssetToName =~ ^[tT]rue$ ]]; then
-			echo "ASSET TO NAME IS SWITCHED ON. Setting device name to asset tag...." >> $AssembleLog
+			echo "ASSET TO NAME IS SWITCHED ON. Setting device name to asset tag...." | tee -a $AssembleLog
 				if [[ $TESTING =~ ^[tT]rue$ ]]; then
-					echo "TEST MODE ENABLED. Device name will not be updated." >> $AssembleLog
+					echo "TEST MODE ENABLED. Device name will not be updated." | tee -a $AssembleLog
 				else
 				/usr/sbin/scutil --set ComputerName "$assetTag"
 				/usr/sbin/scutil --set LocalHostName "$assetTag"
@@ -325,12 +320,12 @@ if [[ "$banner" == "" ]]; then
 		
 				dscacheutil -flushcache
 			
-				echo "Computer name has been set..." >> $AssembleLog
-				echo "`scutil --get ComputerName`" >> $AssembleLog
+				echo "Computer name has been set..." | tee -a $AssembleLog
+				echo "`scutil --get ComputerName`" | tee -a $AssembleLog
 				fi
 		fi
 	else
-		echo "EXTRA INFO IS SWITCHED OFF." >> $AssembleLog
+		echo "EXTRA INFO IS SWITCHED OFF." | tee -a $AssembleLog
 	fi
 	
 else
@@ -345,7 +340,7 @@ else
 	--alignment centre \
 	--messagefont 'name=Arial,size=16' \
 	--blurscreen \
-	--progress $progressTotal \
+	--progress \
 	--commandfile $commandLog \
 	--infobox "$infoText" \
 	--helpmessage "$helpText" &
@@ -353,7 +348,7 @@ else
 	
 	if [[ $EXTRAINFO =~ ^[tT]rue$ ]]; then
 		
-		echo "EXTRA INFO SWITCHED ON. Continuing to gather Email, Username and Asset Tag...." >> $AssembleLog
+		echo "EXTRA INFO SWITCHED ON. Continuing to gather Email, Username and Asset Tag...." | tee -a $AssembleLog
 		
 		asset=$(dialog \
 --title none \
@@ -376,14 +371,14 @@ else
 		user=$(echo $asset | awk -F '"User Name:" : "' '{print$2}' | awk -F '"' '{print$1}')
 		assetTag=$(echo $asset | awk -F '"Asset Tag: FT-MW" : "' '{print$2}' | awk -F '"' '{print$1}')
 		
-		echo "Email is: $email" >> $AssembleLog
-		echo "User name is: $user" >> $AssembleLog
-		echo "Asset Tag is: FT-MW$assetTag" >> $AssembleLog
+		echo "Email is: $email" | tee -a $AssembleLog
+		echo "User name is: $user" | tee -a $AssembleLog
+		echo "Asset Tag is: FT-MW$assetTag" | tee -a $AssembleLog
 		
 		if [[ $TESTING =~ ^[tT]rue$ ]]; then
-			echo "TEST MODE ENABLED. Inventory will not be updated." >> $AssembleLog
+			echo "TEST MODE ENABLED. Inventory will not be updated." | tee -a $AssembleLog
 		else
-			echo "Updating device inventory." >> $AssembleLog
+			echo "Updating device inventory." | tee -a $AssembleLog
 			$jamfBinary recon -email $email
 			$jamfBinary recon -endUsername $user
 			$jamfBinary recon -assetTag "$assetTag"
@@ -396,13 +391,13 @@ else
 				
 				dscacheutil -flushcache
 				
-				echo "Computer name has been set..." >> $AssembleLog
-				echo "`scutil --get ComputerName`" >> $AssembleLog
+				echo "Computer name has been set..." | tee -a $AssembleLog
+				echo "`scutil --get ComputerName`" | tee -a $AssembleLog
 			fi
 			
 		fi
 	else
-		echo "EXTRA INFO IS SWITCHED OFF." >> $AssembleLog
+		echo "EXTRA INFO IS SWITCHED OFF." | tee -a $AssembleLog
 	fi
 	
 fi
@@ -424,59 +419,92 @@ echo "list: " >> $commandLog
 echo "listitem: delete, index: 0" >> $commandLog
 echo "height: 600" >> $commandLog
 
+hash=$(echo $appStatus | cut -d ',' -f3)
+
+hashCheck=$(curl -s https://ics.services.jamfcloud.com/icon/hash_$hash | grep "AccessDenied")
+
+if [[ $hashCheck == "" ]]; then
+	hashURL="https://ics.services.jamfcloud.com/icon/hash_"
+else
+	hashURL="https://euw2.ics.services.jamfcloud.com/icon/hash_"
+fi
+
+progressTotal=${#array[@]}
+sleep 2
+
 for appStatus in "${array[@]}"; do
 	
-	echo "listitem: add, title: $(echo $appStatus | cut -d ',' -f1), icon: https://ics.services.jamfcloud.com/icon/hash_$(echo $appStatus | cut -d ',' -f3), status: pending, statustext: pending" >> $commandLog
+	echo "listitem: add, title: $(echo $appStatus | cut -d ',' -f1), icon: $hashURL$(echo $appStatus | cut -d ',' -f3), status: pending, statustext: pending" >> $commandLog
 	
 done
 
 sleep 5
+
+step=$(echo 100/$progressTotal | bc -l)
+
+echo "Installation process started at `date +%T`" | tee -a $AssembleLog
+echo "Initial ProgressTotal: $progressTotal"
+echo "Incremental Step: $step"
 
 #########################################################################################
 # Application installation
 #########################################################################################
 
 progressStep=1
-installer=$(pgrep installer)
 
 until [ $progressStep -gt $progressTotal ]; do
-
+	
 	for appName in "${array[@]}"; do
 		
 		echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: wait, statustext: installing" >> $commandLog
-		echo "progress: $progressStep" >> $commandLog
+		echo "progress: increment $step" >> $commandLog
 		echo "progresstext: Installing $(echo $appName | cut -d ',' -f1)...." >> $commandLog
 		
-			if [[ $TESTING =~ ^[tT]rue$ ]]; then
-				echo "TEST MODE ENABLED. $(echo $appName | cut -d ',' -f1) will not be installed." >> $AssembleLog
-			else
-				echo "Applications........ ASSEMBLE!" >> $AssembleLog
-				$jamfBinary policy -event $(echo $appName | cut -d ',' -f2)
+		if [[ $TESTING =~ ^[tT]rue$ ]]; then
+			echo "TEST MODE ENABLED. $(echo $appName | cut -d ',' -f1) will not be installed." | tee -a $AssembleLog
+		else
+			echo "Applications........ ASSEMBLE!" | tee -a $AssembleLog
+			echo "Installing $(echo $appName | cut -d ',' -f1)" | tee -a $AssembleLog
+			$jamfBinary policy -event $(echo $appName | cut -d ',' -f2) -forceNoRecon > $PolicyLog
+		fi
+		
+		sleep 1
+		
+		appFailed=$(cat $PolicyLog | grep "Installation failed")
+		appInstalled=$(cat $PolicyLog | grep "Successfully installed")
+		scriptInstalled=$(cat $PolicyLog | grep "code: 0")
+		scriptFailed=$(cat $PolicyLog | grep "code: 1")
+		sleep 1
+		
+		if [[ $TESTING =~ ^[tT]rue$ ]]; then
+			echo "TEST MODE ENABLED. No App validation" | tee -a $AssembleLog
+			echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: error, statustext: installed" >> $commandLog
+			echo "progresstext: TESTING $(echo $appName | cut -d ',' -f1)" >> $commandLog
+		else
+			if [[ $appInstalled =~ . ]] || [[ $scriptInstalled =~ . ]]; then
+				echo "$(echo $appName | cut -d ',' -f1) Installed" | tee -a $AssembleLog
+				echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: success, statustext: installed" >> $commandLog
+				echo "progresstext: Installed $(echo $appName | cut -d ',' -f1)" >> $commandLog
+				sleep 4
 			fi
-	
-			sleep 1
-		
-			appInstalled=$(ls /Applications/ | grep -i "$(echo $appName | cut -d ',' -f1)")
-			MSappInstalled=$(ls /Applications/ | grep -i -m2 Microsoft | tail -n1 | awk '{print $1}')
-			finalConf=$(ls /Users/Shared/.ASMBL/Logs/ | grep "Final" | sed -e 's#.log##')
-			
-			sleep 1
-			
-				if [[ $appInstalled == $(echo $appName | cut -d ',' -f1).* ]] || [[ $MSappInstalled == $(echo $appName | cut -d ',' -f1 | awk '{print $1}') ]] || [[ $finalConf == $(echo $appName | cut -d ',' -f1) ]]; then
-					echo "$(echo $appName | cut -d ',' -f1) Installed" >> $AssembleLog
-					echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: success, statustext: installed" >> $commandLog
-					echo "progresstext: Installed $(echo $appName | cut -d ',' -f1)" >> $commandLog
-					sleep 4
-				else
-					echo "$(echo $appName | cut -d ',' -f1) failed to install" >> $AssembleLog
-					echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: fail, statustext: Failed" >> $commandLog
-					echo "progresstext: Failed to install $(echo $appName | cut -d ',' -f1)" >> $commandLog
-					sleep 4
-				fi
-		
+			if [[ $appFailed =~ . ]] || [[ $scriptFailed =~ . ]]; then
+				echo "$(echo $appName | cut -d ',' -f1) failed to install" | tee -a $AssembleLog
+				echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: fail, statustext: Failed" >> $commandLog
+				echo "progresstext: Failed to install $(echo $appName | cut -d ',' -f1)" >> $commandLog
+				sleep 4
+			fi
+			if [[ $appInstalled == "" ]] && [[ $scriptInstalled == "" ]] && [[ $appFailed == "" ]] && [[ $scriptFailed == "" ]]; then
+				echo "$(echo $appName | cut -d ',' -f1) failed to install" | tee -a $AssembleLog
+				echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: error, statustext: Error" >> $commandLog
+				echo "progresstext: Error with install $(echo $appName | cut -d ',' -f1)" >> $commandLog
+				echo "There was an error with the installation. Please refer to the logs." | tee -a $AssembleLog
+				sleep 4
+			fi
+		fi
 		let "progressStep+=1"
 		sleep 2
-	
+		echo "ProgressStep: $progressStep"
+		echo "ProgressTotal: $progressTotal"
 	done
 done
 sleep 2
@@ -484,6 +512,8 @@ sleep 2
 echo "progresstext: Setup Complete!" >> $commandLog
 
 sleep 2
+
+echo "Installation Finished at `date +%T`" | tee -a $AssembleLog
 
 #########################################################################################
 # Dialog message to show completion
@@ -495,7 +525,7 @@ FV_DEFERRED_STATUS=$(fdesetup status | grep "Deferred" | cut -d ' ' -f6)
 # Logic to log user out if FileVault is detected. Otherwise, app will close.
 if [[ "$FV_DEFERRED_STATUS" = "active" ]]; then
 	
-	echo "Filevault is in deferred mode. User must log out and log in." >> $AssembleLog
+	echo "Filevault is in deferred mode. User must log out and log in." | tee -a $AssembleLog
 	
 	if [[ "$banner" == "" ]]; then
 		dialog \
@@ -528,9 +558,9 @@ if [[ "$FV_DEFERRED_STATUS" = "active" ]]; then
 	echo "quit:" >> $commandLog
 	
 	if [[ $TESTING =~ ^[tT]rue$ ]]; then
-		echo "TEST MODE ENABLED. Final Inventory update will not happen." >> $AssembleLog
+		echo "TEST MODE ENABLED. Final Inventory update will not happen." | tee -a $AssembleLog
 	else
-		echo "Final device inventory update." >> $AssembleLog
+		echo "Final device inventory update." | tee -a $AssembleLog
 		$jamfBinary recon
 	fi
 	sleep 120
@@ -545,9 +575,9 @@ else
 	echo "button1text: Finish" >> $commandLog
 	
 	if [[ $TESTING =~ ^[tT]rue$ ]]; then
-		echo "TEST MODE ENABLED. Final Inventory will not be updated." >> $AssembleLog
+		echo "TEST MODE ENABLED. Final Inventory will not be updated." | tee -a $AssembleLog
 	else
-		echo "Final device inventory update." >> $AssembleLog
+		echo "Final device inventory update." | tee -a $AssembleLog
 		$jamfBinary recon
 	fi
 	sleep 120
