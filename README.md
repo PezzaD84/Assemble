@@ -3,7 +3,7 @@
 # Assemble
 
 ---
-Version 2 now available.
+Version 2.1 now available.
 Change Log can be viewed here [Change log](https://github.com/PezzaD84/Assemble/blob/main/Change%20Log)
 
 ---
