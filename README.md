@@ -1,9 +1,15 @@
+[![Latest-Version](https://img.shields.io/badge/Latest_Version-2.3-green)](https://github.com/PezzaD84/macOSLAPS/releases) ![macOS-Versions](https://img.shields.io/badge/macOS-11+-blue) ![Script-Language](https://img.shields.io/badge/Coding_Language-Bash-blue) [![Powered-by](https://img.shields.io/badge/Powered_by-SwiftDialog-red)](https://github.com/bartreardon/swiftDialog)
+
 # Assemble
 
+---
 Version 2 now available.
+Change Log can be viewed here [Change log](https://github.com/PezzaD84/Assemble/blob/main/Change%20Log)
 
+---
 Assemble is a script I've created to help provision devices using [swiftDialog](https://github.com/bartreardon/swiftDialog)
 
+---
 The script was inspired by the [DEPNotify starter script](https://github.com/jamf/DEPNotify-Starter) and Dan Snelsons [Setup-Your-Mac script](https://github.com/dan-snelson/dialog-scripts/tree/main/Setup%20Your%20Mac).
 
 I wanted to help give end users a nice gui view of what is going on and also try to keep things as simple as possible. In the world of zero touch it's nice to limit end user interaction and this script requires nothing from the end user.
