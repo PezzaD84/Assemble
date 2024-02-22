@@ -474,32 +474,34 @@ until [ $progressStep -gt $progressTotal ]; do
 		appInstalled=$(cat $PolicyLog | grep "Successfully installed")
 		scriptInstalled=$(cat $PolicyLog | grep "code: 0")
 		scriptFailed=$(cat $PolicyLog | grep "code: 1")
+		dmgInstalled=$(cat $PolicyLog | grep "verbose: Installing")
+		commandRan=$(cat $PolicyLog | grep "Result of command:")
 		sleep 1
-		
+			
 		if [[ $TESTING =~ ^[tT]rue$ ]]; then
 			echo "TEST MODE ENABLED. No App validation" | tee -a $AssembleLog
 			echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: error, statustext: installed" >> $commandLog
 			echo "progresstext: TESTING $(echo $appName | cut -d ',' -f1)" >> $commandLog
 		else
-			if [[ $appInstalled =~ . ]] || [[ $scriptInstalled =~ . ]]; then
-				echo "$(echo $appName | cut -d ',' -f1) Installed" | tee -a $AssembleLog
-				echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: success, statustext: installed" >> $commandLog
-				echo "progresstext: Installed $(echo $appName | cut -d ',' -f1)" >> $commandLog
-				sleep 4
-			fi
-			if [[ $appFailed =~ . ]] || [[ $scriptFailed =~ . ]]; then
-				echo "$(echo $appName | cut -d ',' -f1) failed to install" | tee -a $AssembleLog
-				echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: fail, statustext: Failed" >> $commandLog
-				echo "progresstext: Failed to install $(echo $appName | cut -d ',' -f1)" >> $commandLog
-				sleep 4
-			fi
-			if [[ $appInstalled == "" ]] && [[ $scriptInstalled == "" ]] && [[ $appFailed == "" ]] && [[ $scriptFailed == "" ]]; then
-				echo "$(echo $appName | cut -d ',' -f1) failed to install" | tee -a $AssembleLog
-				echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: error, statustext: Error" >> $commandLog
-				echo "progresstext: Error with install $(echo $appName | cut -d ',' -f1)" >> $commandLog
-				echo "There was an error with the installation. Please refer to the logs." | tee -a $AssembleLog
-				sleep 4
-			fi
+				if [[ $appInstalled =~ . ]] || [[ $scriptInstalled =~ . ]] || [[ $commandRan =~ . ]] || [[ $dmgInstalled =~ . ]]; then
+					echo "$(echo $appName | cut -d ',' -f1) Installed" | tee -a $AssembleLog
+					echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: success, statustext: installed" >> $commandLog
+					echo "progresstext: Installed $(echo $appName | cut -d ',' -f1)" >> $commandLog
+					sleep 4
+				fi
+				if [[ $appFailed =~ . ]] || [[ $scriptFailed =~ . ]]; then
+					echo "$(echo $appName | cut -d ',' -f1) failed to install" | tee -a $AssembleLog
+					echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: fail, statustext: Failed" >> $commandLog
+					echo "progresstext: Failed to install $(echo $appName | cut -d ',' -f1)" >> $commandLog
+					sleep 4
+				fi
+				if [[ $appInstalled == "" ]] && [[ $scriptInstalled == "" ]] && [[ $appFailed == "" ]] && [[ $scriptFailed == "" ]] && [[ $commandRan == "" ]] && [[ $dmgInstalled == "" ]]; then
+					echo "$(echo $appName | cut -d ',' -f1) failed to install" | tee -a $AssembleLog
+					echo "listitem: title: $(echo $appName | cut -d ',' -f1), status: error, statustext: Error" >> $commandLog
+					echo "progresstext: Error with install $(echo $appName | cut -d ',' -f1)" >> $commandLog
+					echo "There was an error with the installation. Please refer to the logs." | tee -a $AssembleLog
+					sleep 4
+				fi
 		fi
 		let "progressStep+=1"
 		sleep 2
