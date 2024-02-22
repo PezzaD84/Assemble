@@ -564,6 +564,7 @@ if [[ "$FV_DEFERRED_STATUS" = "active" ]]; then
 	else
 		echo "Final device inventory update." | tee -a $AssembleLog
 		$jamfBinary recon
+		restartJamfFramework
 	fi
 	sleep 120
 	exit 0
@@ -581,6 +582,7 @@ else
 	else
 		echo "Final device inventory update." | tee -a $AssembleLog
 		$jamfBinary recon
+		restartJamfFramework
 	fi
 	sleep 120
 	exit 0
