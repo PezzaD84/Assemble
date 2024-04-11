@@ -419,21 +419,21 @@ echo "list: " >> $commandLog
 echo "listitem: delete, index: 0" >> $commandLog
 echo "height: 600" >> $commandLog
 
-hash=$(echo $appStatus | cut -d ',' -f3)
-
-hashCheck=$(curl -s https://ics.services.jamfcloud.com/icon/hash_$hash | grep "AccessDenied")
-
-if [[ $hashCheck == "" ]]; then
-	hashURL="https://ics.services.jamfcloud.com/icon/hash_"
-else
-	hashURL="https://euw2.ics.services.jamfcloud.com/icon/hash_"
-fi
-
 progressTotal=${#array[@]}
 sleep 2
 
 for appStatus in "${array[@]}"; do
-	
+
+	hash=$(echo $appStatus | cut -d ',' -f3)
+
+	hashCheck=$(curl -s https://ics.services.jamfcloud.com/icon/hash_$hash | grep "AccessDenied")
+
+	if [[ $hashCheck == "" ]]; then
+		hashURL="https://ics.services.jamfcloud.com/icon/hash_"
+	else
+		hashURL="https://euw2.ics.services.jamfcloud.com/icon/hash_"
+	fi
+
 	echo "listitem: add, title: $(echo $appStatus | cut -d ',' -f1), icon: $hashURL$(echo $appStatus | cut -d ',' -f3), status: pending, statustext: pending" >> $commandLog
 	
 done
