@@ -2,8 +2,8 @@
 #
 # Author  : Perry Driscoll - https://github.com/PezzaD84
 # Created : 28/9/2022
-# Updated : 11/1/2023
-# Version : v2.1
+# Updated : 4/9/2024
+# Version : v2.2
 #
 #########################################################################################
 # Description:
@@ -71,7 +71,7 @@ TESTING="true"
 # Set to false by default
 #########################################################################################
 
-EXTRAINFO="false"
+EXTRAINFO="true"
 
 	# If extra info is turned on you can set the device name to be the same as the Asset Tag. False by default.
 	AssetToName="false"
@@ -257,6 +257,7 @@ progressTotal=${#array[@]}
 
 if [[ "$banner" == "" ]]; then
 	dialog \
+	--presentation \
 	--button1disabled \
 	--title Assemble \
 	--position centre \
@@ -330,6 +331,7 @@ if [[ "$banner" == "" ]]; then
 	
 else
 	dialog \
+	--presentation \
 	--button1disabled \
 	--title none \
 	--position centre \
@@ -567,7 +569,7 @@ if [[ "$FV_DEFERRED_STATUS" = "active" ]]; then
 		echo "Restarting JAMF Agent....." | tee -a $AssembleLog
 		restartJamfFramework
 	fi
-	sleep 120
+	sleep 60
 	exit 0
 	
 else
@@ -586,6 +588,6 @@ else
 		echo "Restarting JAMF Agent....." | tee -a $AssembleLog
 		restartJamfFramework
 	fi
-	sleep 120
+	sleep 60
 	exit 0
 fi
